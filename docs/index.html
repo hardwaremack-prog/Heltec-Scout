@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heltec Scout Studio</title>
+<meta name="description" content="Install Heltec Scout on a Heltec WiFi LoRa 32 V3 or V4, pull its logs, and analyze and map what it heard.">
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script type="module" src="https://unpkg.com/esp-web-tools@10.1.1/dist/web/install-button.js?module"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#0d1216;--card:#151d23;--card2:#1b252d;--line:#25323b;--ink:#e4edf2;--mute:#8a9ca8;--accent:#3ec7a6;--accent-ink:#04241c;
+  --wifi:#56a8f5;--ble:#b58cf0;--lora:#3ec7a6;--rf:#f2b84b;--bad:#ef6b6b;
+  font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;color-scheme:dark}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#eef3f6;--card:#fff;--card2:#f5f8fa;--line:#d5dfe5;--ink:#13202a;--mute:#5a6e7a;--accent:#11957a;--accent-ink:#fff;
+  --wifi:#1f74c9;--ble:#7b4fc9;--lora:#11957a;--rf:#b9770c;color-scheme:light}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5;font-size:15px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+.hero{display:flex;gap:16px;align-items:center;padding:26px 0 10px}
+.hero svg{width:64px;height:64px;flex:none}
+h1{margin:0;font-size:30px;line-height:1.1}h1 b{color:var(--accent)}
+.sub{color:var(--mute);margin:4px 0 0}
+nav{position:sticky;top:0;z-index:500;background:var(--bg);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:8px 16px}
+nav button{font:inherit;background:none;border:0;color:var(--mute);padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--card2);color:var(--ink);font-weight:600}
+nav button:disabled{opacity:.35;cursor:default}
+section{padding:18px 0 60px}
+h2{font-size:20px;margin:28px 0 10px}h2:first-child{margin-top:4px}
+h3{font-size:15px;margin:0 0 8px}
+p{margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stat .k{font-size:12px;color:var(--mute)}.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:12px;font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:2px 9px;margin-bottom:8px}
+esp-web-install-button button,.btn{font:inherit;font-weight:700;background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:9px 18px;cursor:pointer;font-size:14px}
+.btn.g{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.warn{border-left:4px solid var(--rf);background:var(--card);padding:11px 14px;border-radius:0 12px 12px 0;margin:12px 0}
+.alert{border-left:4px solid var(--bad);background:var(--card);padding:11px 14px;border-radius:0 12px 12px 0;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:12px;cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;background:var(--card)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tw{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:auto;max-height:560px}
+code{background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:.92em}
+.muted{color:var(--mute);font-size:13px}
+input,select{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=search]{width:min(360px,100%)}
+canvas.chart{width:100%;height:220px;display:block}
+.prog{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:8px 0}.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+#map{height:620px;border-radius:14px;border:1px solid var(--line)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin:8px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;color:var(--mute)}
+.drop.over{border-color:var(--accent);color:var(--ink)}
+.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;background:var(--card2);border:1px solid var(--line);margin:1px 2px 1px 0}
+.pill.bad{border-color:var(--bad);color:var(--bad)}
+.hide{display:none!important}
+a{color:var(--accent)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.msgs div{padding:8px 0;border-bottom:1px solid var(--line)}
+.leaflet-container{background:var(--card2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#151d23"/><circle cx="32" cy="34" r="20" fill="none" stroke="#3ec7a6" stroke-opacity=".35" stroke-width="2"/><circle cx="32" cy="34" r="11" fill="none" stroke="#3ec7a6" stroke-opacity=".6" stroke-width="2"/><path d="M32 34 L46 18" stroke="#3ec7a6" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="34" r="3.5" fill="#3ec7a6"/><circle cx="43" cy="26" r="2.5" fill="#f2b84b"/></svg>
+    <div><h1>Heltec <b>Scout</b> Studio</h1>
+    <p class="sub">A Wi-Fi thumb drive that also logs every Wi-Fi network, Bluetooth device, LoRa packet and 900 MHz signal it hears. Install it, pull the logs, then see it all on a map.</p></div>
+  </div>
+</div>
+<nav><div class="wrap" id="tabs">
+  <button data-t="install" class="on">Install</button><button data-t="data">Get data</button>
+  <button data-t="overview" disabled>Overview</button><button data-t="wifi" disabled>Wi-Fi</button><button data-t="ble" disabled>Bluetooth</button>
+  <button data-t="lora" disabled>LoRa</button><button data-t="rf" disabled>900 MHz</button><button data-t="map" disabled>Map</button><button data-t="export" disabled>Export</button>
+</div></nav>
+<div class="wrap">
+
+<!-- ================= INSTALL ================= -->
+<section id="install">
+  <h2>1. Install it</h2>
+  <p>Plug the board into this computer with a USB-C <i>data</i> cable, pick your board, then choose the serial port when Chrome asks. Works in Chrome or Edge on a PC, Mac or Raspberry Pi.</p>
+  <div class="warn">Installing Scout replaces whatever is on the board, Meshtastic included. You can put Meshtastic back any time from <a href="https://flasher.meshtastic.org">flasher.meshtastic.org</a>.</div>
+  <div class="grid">
+    <div class="card"><span class="tag">Heltec V3</span><h3>WiFi LoRa 32 V3</h3>
+      <esp-web-install-button manifest="manifest-v3.json"><button slot="activate">Install on V3</button>
+        <span slot="unsupported" class="muted">Open this page in Chrome or Edge to install.</span><span slot="not-allowed" class="muted">This page has to be opened over https.</span></esp-web-install-button>
+      <p class="muted" style="margin-top:10px">No card fitted? It logs to about 5.9 MB of the board's own flash instead.</p></div>
+    <div class="card"><span class="tag">Heltec V4</span><h3>WiFi LoRa 32 V4 / V4-R8</h3>
+      <esp-web-install-button manifest="manifest-v4.json"><button slot="activate">Install on V4</button>
+        <span slot="unsupported" class="muted">Open this page in Chrome or Edge to install.</span><span slot="not-allowed" class="muted">This page has to be opened over https.</span></esp-web-install-button>
+      <p class="muted" style="margin-top:10px">Turns on the V4's receive amplifier for better LoRa range. Uses the GPS port if the GNSS kit is plugged in.</p></div>
+  </div>
+  <p class="muted">No port listed? On the V3, hold <b>PRG</b>, tap <b>RST</b>, let go of PRG and try again. The V4 shows up right away. On Windows the V3 may need the free CP210x USB driver.</p>
+
+  <h2>2. Wire it up</h2>
+  <p>Same wiring as Shelf Lite, so a board you already wired for that works as-is.</p>
+  <div class="two">
+    <div><h3>microSD module</h3><div class="tw"><table>
+      <tr><th>Module pin</th><th>Heltec pin</th></tr><tr><td>VCC</td><td><b>3V3</b> (not Ve)</td></tr><tr><td>GND</td><td>GND</td></tr>
+      <tr><td>CS</td><td>GPIO 4</td></tr><tr><td>MISO</td><td>GPIO 6</td></tr><tr><td>SCK</td><td>GPIO 47</td></tr><tr><td>MOSI</td><td>GPIO 48</td></tr></table></div>
+      <p class="muted" style="margin-top:8px">Use a FAT32 card (32 GB cards come that way). Scout stops logging with 8 MB left, so the card never fills solid.</p></div>
+    <div><h3>GPS (optional)</h3><div class="tw"><table>
+      <tr><th>GPS pin</th><th>Heltec pin</th></tr><tr><td>VCC</td><td>3V3</td></tr><tr><td>GND</td><td>GND</td></tr>
+      <tr><td>TX (data out)</td><td>GPIO 39</td></tr><tr><td>RX</td><td>GPIO 38</td></tr></table></div>
+      <p class="muted" style="margin-top:8px">Any 3.3 V NMEA module at 9600 baud (NEO-6M, L76K…). On the V4 just plug in the Heltec GNSS kit. No GPS? Studio estimates locations afterwards (see <b>Get data</b>).</p></div>
+  </div>
+
+  <h2>3. Use it</h2>
+  <div class="two">
+    <div class="card"><h3>Screens</h3>
+      <p class="muted">It cycles through five screens on its own: <b>Drive</b> (hotspot, storage, clock, GPS) → <b>Wi-Fi</b> → <b>Bluetooth</b> → <b>LoRa</b> → <b>900 MHz</b> (a live spectrum of 902–928 MHz). Everything is logged to the card the whole time, whatever screen is showing.</p></div>
+    <div class="card"><h3>Buttons</h3><table>
+      <tr><td><b>PRG</b> once</td><td>Screen to sleep / wake (logging keeps going)</td></tr>
+      <tr><td><b>PRG</b> twice quickly</td><td>Jump to the next screen</td></tr>
+      <tr><td><b>PRG</b> held 3 s</td><td>Asks <i>Reboot?</i> Press PRG once to reboot (logs are kept). Leave it alone and it goes back after 8 s.</td></tr>
+      <tr><td><b>RST</b></td><td>Instant restart (it's wired to the chip's reset line, so the software can't use it)</td></tr></table></div>
+    <div class="card"><h3>Thumb drive</h3>
+      <p class="muted">Join the <b>Scout-XXXX</b> Wi-Fi (password <code>heltecscout</code>). The page opens by itself, or go to <code>http://192.168.4.1</code>. Upload, download and delete files, watch the scanners live, download logs and change settings. Opening that page also sets the board's clock from your phone.</p></div>
+    <div class="card"><h3>Logs</h3>
+      <p class="muted">Every power-up is a new session folder, <code>/scout/s0001</code>, <code>s0002</code>… holding <code>wifi.csv</code>, <code>ble.csv</code>, <code>lora.csv</code>, <code>rf900.csv</code>, <code>gps.csv</code> and <code>events.csv</code>. Plain CSV, so Excel opens them too.</p></div>
+  </div>
+</section>
+
+<!-- ================= GET DATA ================= -->
+<section id="data" class="hide">
+  <h2>Load logs</h2>
+  <div class="grid">
+    <div class="card"><h3>🔌 From the board (USB)</h3>
+      <p class="muted">Plug it in and pull sessions straight off the card. Also sets the board's clock from this computer.</p>
+      <div class="row"><button class="btn" id="usbConnect">Connect</button><button class="btn g hide" id="usbClose">Disconnect</button></div>
+      <div id="usbInfo" class="muted"></div>
+      <div id="usbSessions"></div>
+      <div class="prog hide" id="usbProg"><i></i></div>
+    </div>
+    <div class="card"><h3>📁 From files</h3>
+      <p class="muted">A <b>.scout</b> file from the board's web page, the CSV files, or the whole <code>scout</code> folder from the card in a card reader.</p>
+      <div class="drop" id="drop">Drop files here<br><br>
+        <label class="btn g">Choose files<input type="file" id="fileIn" multiple accept=".scout,.csv,.txt" class="hide"></label>
+        <label class="btn g">Choose folder<input type="file" id="dirIn" webkitdirectory class="hide"></label></div>
+    </div>
+    <div class="card"><h3>🧪 Try it</h3>
+      <p class="muted">No board yet? Load a made-up 40-minute drive with Wi-Fi, Bluetooth, two Meshtastic nodes and meter-style 900 MHz hopping.</p>
+      <button class="btn g" id="sample">Load sample data</button></div>
+  </div>
+
+  <div id="loaded" class="hide">
+    <h2>Sessions</h2>
+    <div class="tw"><table id="sessTable"></table></div>
+    <p class="muted">The board learns the time from GPS, from your phone opening its page, or from this page over USB. Rows logged before that are back-dated automatically. If a session never got the time, type when it started.</p>
+
+    <h2>Locations</h2>
+    <p>Rows get a location from the first of these that has one: <b>board GPS</b> → <b>phone track</b> → <b>Wi-Fi estimate</b> → the board's <b>fixed spot</b> setting → a <b>pin</b> you drop.</p>
+    <div class="stats" id="locStats"></div>
+    <div class="grid" style="margin-top:12px">
+      <div class="card"><h3>📍 Phone track (best)</h3>
+        <p class="muted">Record a GPX track on your phone while the Scout rides along (on iPhone, apps like <i>Open GPX Tracker</i> do this), then load it here. Matched by time.</p>
+        <label class="btn g">Load GPX / KML / CSV<input type="file" id="trackIn" accept=".gpx,.kml,.csv" multiple class="hide"></label>
+        <div class="muted" id="trackInfo" style="margin-top:8px"></div></div>
+      <div class="card"><h3>📶 Wi-Fi estimate</h3>
+        <p class="muted">Looks up where the Wi-Fi networks in each scan are, like a phone does without GPS. Sends only the network addresses to the service you pick.</p>
+        <div class="row"><select id="geoSvc"><option value="beacondb">beaconDB (free, no key)</option><option value="google">Google (needs an API key)</option><option value="custom">Other MLS-style URL</option></select></div>
+        <div class="row"><input id="geoKey" placeholder="API key or full URL" class="hide" style="flex:1"></div>
+        <div class="row"><label class="muted">Up to <input id="geoMax" type="number" value="150" style="width:80px"> lookups</label><button class="btn g" id="geoGo">Estimate</button></div>
+        <div class="prog hide" id="geoProg"><i></i></div><div class="muted" id="geoInfo"></div></div>
+      <div class="card"><h3>📌 Drop a pin</h3>
+        <p class="muted">For a session that sat in one place (on a desk, in the car at work). Type a spot, or tap <b>Pick on map</b>.</p>
+        <div class="row"><select id="pinSess"></select></div>
+        <div class="row"><input id="pinLat" placeholder="Latitude" style="width:120px"><input id="pinLon" placeholder="Longitude" style="width:120px"></div>
+        <div class="row"><button class="btn g" id="pinSet">Set</button><button class="btn g" id="pinPick">Pick on map</button><button class="btn g" id="pinClear">Clear</button></div></div>
+    </div>
+
+    <h2>Meshtastic channels</h2>
+    <p class="muted">Packets on the public <b>LongFast</b> channel are decoded automatically (node names, positions, text). Add your own channel's name and key (from the Meshtastic app's channel QR / share link) to decode those too. Keys stay in this page.</p>
+    <div class="row"><input id="chName" placeholder="Channel name"><input id="chPsk" placeholder="Key (base64, e.g. AQ==)" style="width:280px"><button class="btn g" id="chAdd">Add</button></div>
+    <div id="chList" class="muted"></div>
+  </div>
+</section>
+
+<!-- ================= OVERVIEW ================= -->
+<section id="overview" class="hide">
+  <div class="stats" id="ovStats"></div>
+  <h2>What stood out</h2><div id="ovNotes"></div>
+  <h2>Activity over time</h2>
+  <div class="card"><div class="legend"><span><i style="background:var(--wifi)"></i>Wi-Fi networks per scan</span><span><i style="background:var(--ble)"></i>Bluetooth devices per 15 s</span><span><i style="background:var(--lora)"></i>LoRa packets per minute</span><span><i style="background:var(--rf)"></i>900 MHz hits per minute</span><span>(each line scaled to fit)</span></div>
+  <canvas class="chart" id="ovChart" style="height:260px"></canvas><div class="muted" id="ovAxis"></div></div>
+</section>
+
+<!-- ================= WIFI ================= -->
+<section id="wifi" class="hide">
+  <div class="stats" id="wStats"></div>
+  <h2>Channels (2.4 GHz)</h2><div class="card"><canvas class="chart" id="wChan" style="height:180px"></canvas></div>
+  <h2>Networks</h2>
+  <div class="row"><input type="search" id="wFind" placeholder="Search name or address"><label class="muted"><input type="checkbox" id="wOpen"> open only</label></div>
+  <div class="tw"><table id="wTable"></table></div>
+</section>
+
+<!-- ================= BLE ================= -->
+<section id="ble" class="hide">
+  <div id="bAlert"></div>
+  <div class="stats" id="bStats"></div>
+  <h2>Device types</h2><div class="card"><canvas class="chart" id="bKinds" style="height:200px"></canvas></div>
+  <h2>Devices</h2>
+  <div class="row"><input type="search" id="bFind" placeholder="Search name, type or address"></div>
+  <div class="tw"><table id="bTable"></table></div>
+  <p class="muted">Phones and AirTags change their Bluetooth address every 15 minutes or so, so one gadget can show up as a few rows. "Followed you" means the same address kept showing up over 20+ minutes while you moved several hundred meters.</p>
+</section>
+
+<!-- ================= LORA ================= -->
+<section id="lora" class="hide">
+  <div class="stats" id="lStats"></div>
+  <h2>Nodes heard</h2><div class="tw"><table id="lNodes"></table></div>
+  <h2>Messages</h2><div class="card msgs" id="lMsgs"></div>
+  <h2>Packets</h2><div class="tw"><table id="lPkts"></table></div>
+</section>
+
+<!-- ================= RF ================= -->
+<section id="rf" class="hide">
+  <div class="stats" id="rStats"></div>
+  <h2>Waterfall</h2>
+  <div class="card"><canvas class="chart" id="rWater" style="height:320px"></canvas><div class="muted" id="rWaterInfo"></div></div>
+  <h2>Where the activity was</h2>
+  <div class="card"><canvas class="chart" id="rHist" style="height:200px"></canvas><div class="muted">Bars = how many sweeps caught a signal on that frequency. Teal ticks mark the US Meshtastic preset frequencies.</div></div>
+  <h2>Busiest frequencies</h2><div class="tw"><table id="rTop"></table></div>
+  <p class="muted">Signals spread evenly across the whole band are usually frequency-hopping gear: smart electric/gas/water meters, wireless sensors, cordless phones. A few fixed spikes are usually LoRa, Meshtastic or other single-channel devices.</p>
+</section>
+
+<!-- ================= MAP ================= -->
+<section id="map-s" class="hide">
+  <div class="legend"><span><i style="background:var(--accent)"></i>Route</span><span><i style="background:var(--wifi)"></i>Wi-Fi network (estimated spot)</span><span><i style="background:var(--lora)"></i>Meshtastic node (its own report)</span><span><i style="background:var(--bad)"></i>Bluetooth that followed you</span><span><i style="background:var(--rf)"></i>Strong 900 MHz hit</span></div>
+  <div class="row muted" id="mapLayers"></div>
+  <div id="map"></div>
+  <p class="muted" id="mapNote"></p>
+</section>
+
+<!-- ================= EXPORT ================= -->
+<section id="export" class="hide">
+  <h2>Download</h2>
+  <div class="grid">
+    <div class="card"><h3>WiGLE CSV</h3><p class="muted">Wi-Fi and Bluetooth with locations, ready to upload to wigle.net or open in mapping apps.</p><button class="btn g" data-x="wigle">Download</button></div>
+    <div class="card"><h3>Merged CSVs</h3><p class="muted">All sessions combined, with real times and filled-in locations. LoRa includes decoded Meshtastic fields.</p>
+      <div class="row"><button class="btn g" data-x="wifi">Wi-Fi</button><button class="btn g" data-x="ble">Bluetooth</button><button class="btn g" data-x="lora">LoRa</button><button class="btn g" data-x="rf">900 MHz</button></div></div>
+    <div class="card"><h3>GeoJSON</h3><p class="muted">Route, estimated Wi-Fi spots and Meshtastic nodes for Google Earth, QGIS or geojson.io.</p><button class="btn g" data-x="geojson">Download</button></div>
+  </div>
+</section>
+
+<p class="muted" style="margin:10px 0 40px">Heltec Scout · works with the Heltec WiFi LoRa 32 V3 and V4 · part of the Heltec family alongside Shelf Lite, Heltec-C64 and Heltec-Mac · <a href="https://github.com/hardwaremack-prog/Heltec-Scout">source on GitHub</a></p>
+</div>
+<script src="studio-core.js"></script>
+<script src="studio.js"></script>
+</body>
+</html>

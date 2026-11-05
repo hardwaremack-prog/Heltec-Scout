@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heltec Scout</title>
+<style>
+:root{--bg:#0f1418;--card:#172028;--line:#26333d;--ink:#e6eef3;--mute:#8fa2af;--accent:#3ec7a6;--warn:#f2b84b;--bad:#ef6b6b;
+  font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;color-scheme:dark}
+@media (prefers-color-scheme: light){:root{--bg:#f2f6f8;--card:#fff;--line:#d7e1e7;--ink:#14212a;--mute:#5d707c;--accent:#13997b;color-scheme:light}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:2}
+.top{display:flex;align-items:center;gap:10px;padding:12px 16px 6px;max-width:900px;margin:0 auto}
+.top h1{font-size:19px;margin:0;flex:1}.top h1 b{color:var(--accent)}
+.rec{font-size:12px;color:var(--mute)}.rec i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad);margin-right:5px;animation:b 1.2s infinite}
+@keyframes b{50%{opacity:.25}}
+nav{display:flex;gap:4px;padding:0 12px 8px;max-width:900px;margin:0 auto;overflow-x:auto}
+nav button{font:inherit;background:none;border:0;color:var(--mute);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--card);color:var(--ink);font-weight:600}
+main{max-width:900px;margin:0 auto;padding:14px 16px 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.k{font-size:12px;color:var(--mute)}.v{font-size:21px;font-weight:700}
+h2{font-size:16px;margin:22px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}th{font-size:12px;color:var(--mute);font-weight:600}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+canvas{width:100%;height:150px;display:block}
+.btn{font:inherit;font-weight:600;background:var(--accent);color:#04241c;border:0;border-radius:999px;padding:8px 16px;cursor:pointer}
+.btn.g{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.r{background:var(--bad);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.crumb{color:var(--mute);font-size:14px;flex:1;word-break:break-all}
+a{color:var(--accent)}
+label{display:block;font-size:13px;color:var(--mute);margin-top:10px}
+input,select{font:inherit;width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.muted{color:var(--mute);font-size:13px}
+.hide{display:none}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>Heltec <b>Scout</b></h1><span class="rec" id="rec"><i></i>logging</span></div>
+  <nav id="nav"><button data-t="live" class="on">Live</button><button data-t="files">Files</button><button data-t="logs">Logs</button><button data-t="set">Settings</button></nav>
+</header>
+<main>
+<section id="live">
+  <div class="grid">
+    <div class="card"><div class="k">Wi-Fi now / seen</div><div class="v" id="cW">–</div></div>
+    <div class="card"><div class="k">Bluetooth now / seen</div><div class="v" id="cB">–</div></div>
+    <div class="card"><div class="k">LoRa packets / nodes</div><div class="v" id="cL">–</div></div>
+    <div class="card"><div class="k">900 MHz hits</div><div class="v" id="cR">–</div></div>
+    <div class="card"><div class="k">Storage</div><div class="v" id="cS">–</div><div class="bar"><i id="sBar"></i></div></div>
+    <div class="card"><div class="k">Location</div><div class="v" id="cG" style="font-size:15px">–</div></div>
+  </div>
+  <h2>900 MHz band</h2>
+  <div class="card" style="padding:8px"><canvas id="spec"></canvas><div class="muted" id="specInfo"></div></div>
+  <h2>Wi-Fi (strongest)</h2><div class="wrap"><table id="tW"></table></div>
+  <h2>Bluetooth (last 15 s)</h2><div class="wrap"><table id="tB"></table></div>
+  <h2>LoRa (latest packets)</h2><div class="wrap"><table id="tL"></table></div>
+  <p class="muted" id="meta"></p>
+</section>
+
+<section id="files" class="hide">
+  <div class="row"><span class="crumb" id="crumb">/</span>
+    <button class="btn g" id="up1">Up</button><button class="btn g" id="mk">New folder</button>
+    <label class="btn" style="margin:0;color:#04241c">Upload<input type="file" id="upf" multiple class="hide"></label></div>
+  <div class="muted" id="upst"></div>
+  <div class="wrap"><table id="tF"></table></div>
+</section>
+
+<section id="logs" class="hide">
+  <p class="muted">Each power-up is a new session. Download a session as one <b>.scout</b> file and open it in Scout Studio to analyze it and map it.</p>
+  <div class="wrap"><table id="tS"></table></div>
+</section>
+
+<section id="set" class="hide">
+  <form id="f">
+  <h2>Hotspot</h2>
+  <div class="two"><div><label>Name</label><input name="apName"></div><div><label>New password (8+ chars, blank = keep)</label><input name="apPass" type="password"></div></div>
+  <label>Also join home Wi-Fi (optional, blank = off)</label>
+  <div class="two"><input name="staSsid" placeholder="Network name"><input name="staPass" type="password" placeholder="Password (blank = keep)"></div>
+  <h2>Screen</h2>
+  <div class="two"><div><label>Seconds per screen (0 = no auto-scroll)</label><input name="scrollSec" type="number" min="0"></div>
+  <div><label>Sleep screen after minutes (0 = never)</label><input name="sleepMin" type="number" min="0"></div></div>
+  <h2>LoRa listener</h2>
+  <div class="row"><select id="preset" style="width:auto"><option value="">Meshtastic preset…</option>
+    <option value="906.875,250,11,5">US LongFast (906.875)</option><option value="913.125,250,9,5">US MediumFast (913.125)</option>
+    <option value="914.875,250,10,5">US MediumSlow (914.875)</option><option value="918.875,250,7,5">US ShortFast (918.875)</option>
+    <option value="920.625,250,8,5">US ShortSlow (920.625)</option><option value="905.312,125,12,8">US LongSlow (905.312)</option>
+    <option value="912.812,125,11,8">US LongModerate (912.812)</option></select></div>
+  <div class="two"><div><label>Frequency MHz</label><input name="loraFreq" type="number" step="0.001"></div><div><label>Bandwidth kHz</label><input name="loraBw" type="number" step="0.1"></div>
+  <div><label>Spreading factor</label><input name="loraSf" type="number" min="6" max="12"></div><div><label>Coding rate (4/x)</label><input name="loraCr" type="number" min="5" max="8"></div></div>
+  <label>Sync word (43 = Meshtastic)</label><input name="loraSync" type="number">
+  <h2>900 MHz sweep</h2>
+  <div class="two"><div><label>Start MHz</label><input name="sweepStart" type="number" step="0.001"></div><div><label>Stop MHz</label><input name="sweepStop" type="number" step="0.001"></div>
+  <div><label>Step MHz</label><input name="sweepStep" type="number" step="0.01"></div><div><label>Activity threshold (dB over floor)</label><input name="sweepThresh" type="number"></div></div>
+  <h2>Wi-Fi scan</h2><label>Scan every N seconds</label><input name="wifiEvery" type="number" min="5">
+  <h2>Location</h2>
+  <div class="two"><div><label>GPS module</label><select name="gpsOn"><option value="1">On</option><option value="0">Off</option></select></div><div><label>GPS baud</label><input name="gpsBaud" type="number"></div>
+  <div><label>GPS RX pin (board receives)</label><input name="gpsRx" type="number"></div><div><label>GPS TX pin</label><input name="gpsTx" type="number"></div>
+  <div><label>Fixed latitude (no GPS)</label><input name="fixedLat" type="number" step="0.000001"></div><div><label>Fixed longitude</label><input name="fixedLon" type="number" step="0.000001"></div></div>
+  <div class="row" style="margin-top:16px"><button class="btn" type="submit">Save</button><button class="btn g" type="button" id="reb">Reboot</button><span class="muted" id="sv"></span></div>
+  </form>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let st=null, cwd='/', tab='live', cfgLoaded=false;
+const fmtB=b=>b>1e9?(b/1e9).toFixed(1)+' GB':b>1e6?(b/1e6).toFixed(1)+' MB':(b/1e3).toFixed(0)+' KB';
+const post=(u,o)=>fetch(u,{method:'POST',body:new URLSearchParams(o||{})});
+post('/api/time',{t:Math.floor(Date.now()/1000)});   // give the board the right time
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('main section').forEach(s=>s.classList.toggle('hide',s.id!==tab));if(tab==='files')ls();if(tab==='logs')sessions();if(tab==='set')fillCfg(true)});
+
+async function poll(){
+  try{ st=await (await fetch('/api/status')).json(); render(); }catch(e){ $('#meta').textContent='Lost contact with the board…'; }
+  setTimeout(poll, tab==='live'?2000:6000);
+}
+function render(){
+  const c=st.counts;
+  $('#cW').textContent=c.wifiNow+' / '+c.wifiUnique; $('#cB').textContent=c.bleNow+' / '+c.bleUnique;
+  $('#cL').textContent=c.loraPkts+' / '+c.loraNodes; $('#cR').textContent=c.rfHits;
+  $('#cS').textContent=st.store==='none'?'none':fmtB(st.total-st.used)+' free'; $('#sBar').style.width=(st.total?st.used/st.total*100:0)+'%';
+  const L=st.loc; $('#cG').textContent=L.ok?`${L.lat.toFixed(5)}, ${L.lon.toFixed(5)} (${L.src}${L.sats?', '+L.sats+' sats':''})`:L.gpsSeen?'GPS searching…':'No GPS — Scout Studio can estimate it';
+  $('#rec').style.visibility=st.store==='none'?'hidden':'visible';
+  $('#tW').innerHTML='<tr><th>Network</th><th>Ch</th><th>dBm</th><th>BSSID</th></tr>'+st.wifi.map(w=>`<tr><td>${w.ssid?esc(w.ssid):'<i class=muted>hidden</i>'}${w.open?' 🔓':''}</td><td class=n>${w.ch}</td><td class=n>${w.rssi}</td><td class=muted>${w.bssid}</td></tr>`).join('');
+  $('#tB').innerHTML='<tr><th>Device</th><th>Type</th><th>dBm</th><th>Address</th></tr>'+st.ble.map(b=>`<tr><td>${esc(b.name)||'<i class=muted>no name</i>'}</td><td>${esc(b.kind)}</td><td class=n>${b.rssi}</td><td class=muted>${b.addr}</td></tr>`).join('');
+  $('#tL').innerHTML='<tr><th>From</th><th>To</th><th>dBm</th><th>SNR</th><th>Bytes</th><th>Ago</th></tr>'+(st.lora.length?st.lora.map(p=>`<tr><td>!${p.src}</td><td>${p.dst==='ffffffff'?'everyone':'!'+p.dst}</td><td class=n>${p.rssi}</td><td class=n>${p.snr}</td><td class=n>${p.len}</td><td class=n>${p.ago}s</td></tr>`).join(''):'<tr><td colspan=6 class=muted>Nothing heard yet</td></tr>');
+  const t=st.utc?new Date(st.utc*1000).toLocaleString():'clock not set';
+  $('#meta').textContent=`${st.board} · fw ${st.fw} · session ${st.dir} · ${t} (${st.timeSrc}) · up ${Math.floor(st.uptime/60)} min${st.batt>3&&st.batt<4.4?' · battery '+st.batt.toFixed(2)+' V':''}${st.sta!=='0.0.0.0'?' · home Wi-Fi '+st.sta:''}`;
+  spec(); if(tab==='set') fillCfg(false);
+}
+function spec(){
+  const cv=$('#spec'), r=cv.getBoundingClientRect(), dpr=devicePixelRatio||1; cv.width=r.width*dpr; cv.height=r.height*dpr;
+  const g=cv.getContext('2d'); g.scale(dpr,dpr); const W=r.width,H=r.height, R=st.rf, n=R.now.length; if(!n)return;
+  const lo=Math.min(R.floor-8,-125), hi=lo+60, y=v=>H-14-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(H-20);
+  const css=getComputedStyle(document.documentElement), acc=css.getPropertyValue('--accent'), mute=css.getPropertyValue('--mute'), warn=css.getPropertyValue('--warn');
+  const bw=W/n; g.fillStyle=acc; R.now.forEach((v,i)=>{const yy=y(v);g.fillRect(i*bw,yy,Math.max(1,bw-1),H-14-yy)});
+  g.strokeStyle=warn; g.beginPath(); R.peak.forEach((v,i)=>{const yy=y(v); i?g.lineTo(i*bw+bw/2,yy):g.moveTo(bw/2,yy)}); g.stroke();
+  g.fillStyle=mute; g.font='11px system-ui'; g.fillText(R.start.toFixed(0)+' MHz',2,H-2);
+  const end=(R.start+R.step*(n-1)).toFixed(0)+' MHz'; g.fillText(end,W-g.measureText(end).width-2,H-2);
+  g.setLineDash([4,4]); g.strokeStyle=mute; g.beginPath(); g.moveTo(0,y(R.floor)); g.lineTo(W,y(R.floor)); g.stroke(); g.setLineDash([]);
+  $('#specInfo').textContent=`Noise floor ${R.floor} dBm · busiest ${R.busiest?R.busiest.toFixed(2)+' MHz':'—'} · ${st.counts.sweeps} sweeps · orange = recent peaks`;
+}
+async function ls(){
+  $('#crumb').textContent=cwd; const r=await fetch('/api/ls?dir='+encodeURIComponent(cwd)); if(!r.ok){$('#tF').innerHTML='<tr><td>No storage</td></tr>';return}
+  const L=(await r.json()).sort((a,b)=>(b.d-a.d)||a.n.localeCompare(b.n));
+  $('#tF').innerHTML=L.length?L.map(f=>{const p=(cwd.endsWith('/')?cwd:cwd+'/')+f.n;return `<tr><td>${f.d?'📁 <a href="#" data-cd="'+esc(p)+'">'+esc(f.n)+'</a>':'<a href="/api/dl?path='+encodeURIComponent(p)+'" target=_blank>'+esc(f.n)+'</a>'}</td><td class=n>${f.d?'':fmtB(f.s)}</td><td class=n>${f.d?'':'<a href="/api/dl?save=1&path='+encodeURIComponent(p)+'">⬇</a>'} <a href="#" data-rm="${esc(p)}">✕</a></td></tr>`}).join(''):'<tr><td class=muted>Empty folder</td></tr>';
+}
+$('#tF').onclick=async e=>{const a=e.target.closest('a');if(!a)return;
+  if(a.dataset.cd){e.preventDefault();cwd=a.dataset.cd;ls()}
+  if(a.dataset.rm){e.preventDefault();if(confirm('Delete '+a.dataset.rm+'?')){const r=await post('/api/rm',{path:a.dataset.rm});if(!r.ok)alert(await r.text());ls()}}};
+$('#up1').onclick=()=>{if(cwd!=='/'){cwd=cwd.replace(/\/[^/]+$/,'')||'/';ls()}};
+$('#mk').onclick=async()=>{const n=prompt('Folder name');if(n){await post('/api/mkdir',{path:(cwd.endsWith('/')?cwd:cwd+'/')+n.replace(/[\/\\]/g,'_')});ls()}};
+$('#upf').onchange=async e=>{for(const f of e.target.files){await new Promise(res=>{const x=new XMLHttpRequest(),fd=new FormData();fd.append('f',f,f.name);
+  x.upload.onprogress=p=>$('#upst').textContent=`Uploading ${f.name}: ${Math.round(p.loaded/p.total*100)}%`;x.onloadend=res;x.open('POST','/api/up?dir='+encodeURIComponent(cwd));x.send(fd)})}
+  $('#upst').textContent='Upload done';e.target.value='';ls()};
+async function sessions(){
+  const r=await fetch('/api/ls?dir=/scout'); if(!r.ok){$('#tS').innerHTML='<tr><td>No storage</td></tr>';return}
+  const L=(await r.json()).filter(f=>f.d).sort((a,b)=>b.n.localeCompare(a.n)), cur=st?st.dir.split('/').pop():'';
+  $('#tS').innerHTML='<tr><th>Session</th><th></th><th></th></tr>'+L.map(f=>`<tr><td>${f.n}${f.n===cur?' <span class=muted>(now)</span>':''}</td><td><a href="/api/bundle?s=${f.n}">Download .scout</a></td><td class=n>${f.n===cur?'':'<a href="#" data-rm="/scout/'+f.n+'">Delete</a>'}</td></tr>`).join('');
+}
+$('#tS').onclick=async e=>{const a=e.target.closest('a[data-rm]');if(!a)return;e.preventDefault();if(confirm('Delete '+a.dataset.rm+' and its logs?')){await post('/api/rm',{path:a.dataset.rm});sessions()}};
+function fillCfg(force){ if(!st||(cfgLoaded&&!force))return; cfgLoaded=true; const f=$('#f');
+  for(const[k,v]of Object.entries(st.cfg)){const el=f.elements[k];if(el)el.value=typeof v==='boolean'?(v?'1':'0'):v} }
+$('#preset').onchange=e=>{if(!e.target.value)return;const[a,b,c,d]=e.target.value.split(','),f=$('#f');f.loraFreq.value=a;f.loraBw.value=b;f.loraSf.value=c;f.loraCr.value=d;f.loraSync.value=43};
+$('#f').onsubmit=async e=>{e.preventDefault();const o={};new FormData(e.target).forEach((v,k)=>{if(!(k.endsWith('Pass')&&!v))o[k]=v});
+  const r=await post('/api/settings',o), t=await r.text(); $('#sv').textContent=t==='restart'?'Saved — the board is restarting. Rejoin its Wi-Fi.':'Saved';cfgLoaded=false};
+$('#reb').onclick=()=>{if(confirm('Reboot the board? Logs are kept.'))post('/api/reboot')};
+poll();
+</script>
+</body>
+</html>

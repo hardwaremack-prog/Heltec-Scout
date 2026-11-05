@@ -1,0 +1,8 @@
+{
+  "name": "Heltec Scout for Heltec V4",
+  "version": "1.0.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    { "chipFamily": "ESP32-S3", "parts": [ { "path": "firmware/heltec-scout-v4.bin", "offset": 0 } ] }
+  ]
+}
