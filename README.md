@@ -55,13 +55,15 @@ Each power-up gets its own folder: `/scout/s0001`, `s0002`… with `wifi.csv`, `
 
 ## Wiring (same as Shelf Lite)
 
+![microSD wiring for Heltec Scout](docs/sd-wiring.png)
+
 | microSD module | Heltec |
 |---|---|
 | VCC | **3V3** |
 | GND | GND |
 | CS | GPIO 4 |
 | MISO | GPIO 6 |
-| SCK | GPIO 47 |
+| CLK (SCK) | GPIO 47 |
 | MOSI | GPIO 48 |
 
 GPS (optional): VCC 3V3, GND, GPS TX → GPIO 39, GPS RX → GPIO 38, 9600 baud. Pins and baud can be changed on the Settings page.

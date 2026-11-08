@@ -101,10 +101,11 @@ a{color:var(--accent)}
 
   <h2>2. Wire it up</h2>
   <p>Same wiring as Shelf Lite, so a board you already wired for that works as-is.</p>
+  <img src="sd-wiring.png" alt="microSD wiring: 3v3 to 3V3, CS to GPIO 4, MOSI to GPIO 48, CLK to GPIO 47, MISO to GPIO 6, GND to GND" style="display:block;width:100%;max-width:900px;border-radius:10px;margin:8px 0 14px">
   <div class="two">
     <div><h3>microSD module</h3><div class="tw"><table>
       <tr><th>Module pin</th><th>Heltec pin</th></tr><tr><td>VCC</td><td><b>3V3</b> (not Ve)</td></tr><tr><td>GND</td><td>GND</td></tr>
-      <tr><td>CS</td><td>GPIO 4</td></tr><tr><td>MISO</td><td>GPIO 6</td></tr><tr><td>SCK</td><td>GPIO 47</td></tr><tr><td>MOSI</td><td>GPIO 48</td></tr></table></div>
+      <tr><td>CS</td><td>GPIO 4</td></tr><tr><td>MISO</td><td>GPIO 6</td></tr><tr><td>CLK (SCK)</td><td>GPIO 47</td></tr><tr><td>MOSI</td><td>GPIO 48</td></tr></table></div>
       <p class="muted" style="margin-top:8px">Use a FAT32 card (32 GB cards come that way). Scout stops logging with 8 MB left, so the card never fills solid.</p></div>
     <div><h3>GPS (optional)</h3><div class="tw"><table>
       <tr><th>GPS pin</th><th>Heltec pin</th></tr><tr><td>VCC</td><td>3V3</td></tr><tr><td>GND</td><td>GND</td></tr>
